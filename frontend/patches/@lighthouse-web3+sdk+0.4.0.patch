@@ -1,0 +1,36 @@
+diff --git a/node_modules/@lighthouse-web3/sdk/dist/Lighthouse/uploadEncrypted/encrypt/text/browser.js b/node_modules/@lighthouse-web3/sdk/dist/Lighthouse/uploadEncrypted/encrypt/text/browser.js
+index b2b1a4d..e10677e 100644
+--- a/node_modules/@lighthouse-web3/sdk/dist/Lighthouse/uploadEncrypted/encrypt/text/browser.js
++++ b/node_modules/@lighthouse-web3/sdk/dist/Lighthouse/uploadEncrypted/encrypt/text/browser.js
+@@ -6,6 +6,12 @@ const kavach_1 = require("@lighthouse-web3/kavach");
+ const lighthouse_config_1 = require("../../../../lighthouse.config");
+ const util_1 = require("../../../utils/util");
+ exports.default = async (text, apiKey, publicKey, signedMessage, name) => {
++    console.log('Uploading encrypted text to Lighthouse...');
++    console.log('text:', text);
++    console.log('apiKey:', apiKey);
++    console.log('publicKey:', publicKey);
++    console.log('signedMessage:', signedMessage);
++    console.log('name:', name);
+     try {
+         const token = 'Bearer ' + apiKey;
+         const endpoint = lighthouse_config_1.lighthouseConfig.lighthouseNode + '/api/v0/add';
+@@ -29,10 +35,17 @@ exports.default = async (text, apiKey, publicKey, signedMessage, name) => {
+             throw new Error(`HTTP error! status: ${response.status}`);
+         }
+         const responseData = (await response.json());
+-        const { error } = await (0, kavach_1.saveShards)(publicKey, responseData.Hash, signedMessage, keyShards);
++        console.log('Response from Lighthouse:', responseData);
++        console.log('Response Hash:', responseData.Hash);
++        console.log('Response data[0].Hash:', responseData[0].Hash);
++
++        console.log('keyShards:', keyShards);
++        const { error } = await (0, kavach_1.saveShards)(publicKey, responseData[0].Hash, signedMessage, keyShards);
+         if (error) {
++            console.error('Error saving shards:', error);
+             throw new Error('Error encrypting file');
+         }
++        console.log('Shards saved successfully:', responseData.Hash);
+         return { data: responseData };
+     }
+     catch (error) {
