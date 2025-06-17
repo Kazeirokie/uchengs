@@ -20,7 +20,7 @@ contract LandNFT is ERC721Enumerable, ERC721URIStorage {
     }
 
     constructor() ERC721("LandNFT", "LAND") {
-        govAddress   = msg.sender;
+        govAddress = msg.sender;
         _nextTokenId = 0;
     }
 

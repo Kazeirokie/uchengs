@@ -26,7 +26,7 @@ export default function ReEncrypt() {
   const [lands, setLands] = useState<Land[]>([]);
 
   // New state for purchase flow
-const [currentAccount, setCurrentAccount] = useState<string>('');
+  const [currentAccount, setCurrentAccount] = useState<string>('');
   const [purchaseRequests, setPurchaseRequests] = useState<PurchaseRequest[]>([]);
 
   // Metadata inputs
@@ -46,10 +46,10 @@ const [currentAccount, setCurrentAccount] = useState<string>('');
   // Encrypt metadata & mint NFT
   async function encryptAndMint() {
     try {
-      if (!window.ethereum) throw new Error('MetaMask not found');
       setStatus('⏳ Connecting wallet…');
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const provider = new ethers.BrowserProvider(window.ethereum as any);
+
+      if (!window.ethereum) throw new Error('MetaMask not found');
+      const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const govAddr = await signer.getAddress();
 
@@ -80,11 +80,11 @@ const [currentAccount, setCurrentAccount] = useState<string>('');
       setEncryptedCid(cid);
       setStatus(`✅ Metadata encrypted: ${cid}`);
 
-      setStatus('⏳ Minting Land NFT…');
-      
       const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
       const tx = await contract.mintLand(cid);
       await tx.wait();
+
+      setStatus('⏳ Minting Land NFT…');
 
       // Derive tokenId by fetching new balance and subtracting one
       const balance = await contract.balanceOf(govAddr);
@@ -150,7 +150,7 @@ const [currentAccount, setCurrentAccount] = useState<string>('');
     }
   }
 
-    // Connect wallet, set currentAccount
+  // Connect wallet, set currentAccount
   async function connectWallet() {
     if (!window.ethereum) throw new Error('MetaMask not found');
     await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -165,7 +165,10 @@ const [currentAccount, setCurrentAccount] = useState<string>('');
   async function requestPurchase(tokenId: string) {
     try {
       setStatus(`⏳ Requesting purchase for #${tokenId}…`);
-      const { provider, signer } = await connectWallet();
+
+      // Grab the new address directly
+      const { provider, signer, addr } = await connectWallet();
+
       const marketRead = new ethers.Contract(
         CONTRACT_ADDRESS,
         ['function ownerOf(uint256) view returns (address)'],
@@ -180,19 +183,24 @@ const [currentAccount, setCurrentAccount] = useState<string>('');
       );
       const tx = await market.requestPurchase(tokenId);
       await tx.wait();
+
       setStatus('✅ Purchase request sent!');
 
-      setPurchaseRequests((prev) => [
+      // Use `addr` here instead of `currentAccount`
+      setPurchaseRequests(prev => [
         ...prev,
-        { tokenId, buyer: currentAccount, previousOwner: prevOwner }
+        { tokenId, buyer: addr, previousOwner: prevOwner }
       ]);
-              console.log(`Purchase request for token #${tokenId} by ${currentAccount} (previous owner: ${prevOwner})`)
 
+      console.log(
+        `Purchase request for token #${tokenId} by ${addr} (previous owner: ${prevOwner})`
+      );
     } catch (err: any) {
       console.error(err);
       setStatus('❌ requestPurchase error: ' + (err.message || String(err)));
     }
   }
+
 
   // Gov approves on-chain then transfers off-chain shards
   async function approvePurchase(tokenId: string) {
@@ -267,7 +275,7 @@ const [currentAccount, setCurrentAccount] = useState<string>('');
 
   // setup on mount
   useEffect(() => {
-    if (window.ethereum) connectWallet().catch(() => {});
+    if (window.ethereum) connectWallet().catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -323,7 +331,7 @@ const [currentAccount, setCurrentAccount] = useState<string>('');
         )}
       </section>
 
- {/* Available Lands & My Lands */}
+      {/* Available Lands & My Lands */}
       <section style={{ marginTop: 24 }}>
         <h3>Available Lands</h3>
         <button onClick={fetchMyLands}>Refresh</button>
@@ -338,7 +346,7 @@ const [currentAccount, setCurrentAccount] = useState<string>('');
                   Request Purchase
                 </button>
               </li>
-          ))}
+            ))}
         </ul>
 
         <h3>Pending Requests (Gov only)</h3>
